@@ -1,20 +1,28 @@
 <script lang="ts">
-  import type {CreationResult, PyProject} from '../shared/project-config';
+  import type {CreationResult, PyProject, GoProject} from '../shared/project-config';
 
-  let project: PyProject = $state({
+  let PythonProject: PyProject = $state({
     name: '',
     description: '',
     gitInit: false,
     directory: ''
   });
 
-  async function handleCreateProject(event: SubmitEvent){
-    event.preventDefault();
+  let GoProj: GoProject = $state({
+    name: '',
+    description: '',
+    gitInit: false,
+    directory: '',
+    modulePath: '',
+  });
+
+  async function handleCreateProject(e: SubmitEvent){
+    e.preventDefault();
     isCreating = true;
     creationResult = null;
 
     try{
-      creationResult = await window.launchframe.createPythonProject($state.snapshot(project));
+      creationResult = await window.launchframe.createPythonProject($state.snapshot(PythonProject));
     }
     catch (error: unknown){
         creationResult = {
@@ -27,7 +35,7 @@
     }
   }
 
-  async function handleChooseDirectory(){
+  async function handleChooseDirectory(project: { directory: string }){
     const directory = await window.launchframe.chooseProjectDirectory();
 
     if (directory !== null){
@@ -49,17 +57,17 @@
   <form class="python-project-form" onsubmit={handleCreateProject}>
     <div class="form-group">
       <label class="description-label" for="name">Project Name:</label>
-      <input type="text" id="name" bind:value={project.name} required />
+      <input type="text" id="name" bind:value={PythonProject.name} required />
     </div>
 
     <div class="form-group">
       <label class="description-label" for="description">Description:</label>
-      <textarea id="description" bind:value={project.description}></textarea>
+      <textarea id="description" bind:value={PythonProject.description}></textarea>
     </div>
 
     <div class="form-group checkbox-group">
       <label for="gitInit">
-        <input type="checkbox" id="gitInit" bind:checked={project.gitInit} />
+        <input type="checkbox" id="gitInit" bind:checked={PythonProject.gitInit} />
         <span>Initialize Git Repository</span>
       </label>
     </div>
@@ -67,8 +75,14 @@
     <div class="form-group">
       <label class="description-label" for="directory">Directory:</label>
       <div class="directory-controls">
-        <span class="directory-value">{project.directory || 'No directory selected'}</span>
-        <button type="button" class="secondary-button" onclick={handleChooseDirectory}>Browse...</button>
+        <span class="directory-value">{PythonProject.directory || 'No directory selected'}</span>
+        <button
+          type="button"
+          class="secondary-button"
+          onclick={() => handleChooseDirectory(PythonProject)}
+        >
+          Browse...
+        </button>
       </div>
     </div>
 

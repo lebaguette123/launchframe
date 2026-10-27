@@ -1,75 +1,15 @@
-import type { PyProject } from '../../shared/project-config.js';
+import type {GoProject, PyProject} from '../../shared/project-config.js';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
-import {isNodeError, validateProjectName} from "../utilities/utility-functions.ts";
+import {getErrorMessage, createProjectDirectory} from "../utilities/utility-functions.ts";
+import {ProjectCreationError} from "./creation-error.ts";
 
 
-export class ProjectCreationError extends Error {
-    readonly projectDir: string;
-    readonly failedStep: string;
-    readonly completedSteps: readonly string[];
 
-    constructor(
-        message: string,
-        projectDir: string,
-        failedStep: string,
-        completedSteps: readonly string[],
-        options?: ErrorOptions,
-    ) {
-        super(message, options);
-        this.name = 'ProjectCreationError';
-        this.projectDir = projectDir;
-        this.failedStep = failedStep;
-        this.completedSteps = completedSteps;
-    }
-}
-
-function getErrorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : String(error);
-}
-
-export async function createProject(project: PyProject): Promise<string> {
-
-    const projectName = validateProjectName(project.name);
-    const parentDir = project.directory.trim();
-
-    if (parentDir === '') {
-        throw new Error('Project directory is required.');
-    }
-
-    if (!path.isAbsolute(parentDir)) {
-        throw new Error('Project directory must be an absolute path.');
-    }
-
-    let parentStats: Awaited<ReturnType<typeof fs.stat>>;
-
-    try{
-        parentStats = await fs.stat(parentDir);
-    } catch (err: unknown){
-        if (isNodeError(err) && err.code === 'ENOENT') {
-            throw new Error(`Parent directory does not exist: ${parentDir}`, { cause: err });
-        }
-
-        throw new Error(`Unable to inspect parent directory: ${parentDir}`, { cause: err });
-    }
-
-    if (!parentStats.isDirectory()) {
-        throw new Error(`Project parent path is not a directory: ${parentDir}`);
-    }
-
-    const projectDir = path.join(parentDir, projectName);
-
-    try {
-        await fs.mkdir(projectDir);
-    } catch (err: unknown) {
-        if (isNodeError(err) && err.code === 'EEXIST') {
-            throw new Error(`A project directory already exists at: ${projectDir}`, { cause: err });
-        }
-
-        throw new Error(`Unable to create project directory: ${projectDir}`, { cause: err });
-    }
+export async function createPythonProject(project: PyProject): Promise<string> {
+    const projectDir = await createProjectDirectory(project);
 
     const completedSteps = ['project directory'];
     let failedStep = 'virtual environment';
@@ -108,5 +48,66 @@ export async function createProject(project: PyProject): Promise<string> {
             {cause: operationError},
         );
     }
+}
 
+export async function createGoProject(project: GoProject): Promise<string>{
+    const projectDir = await createProjectDirectory(project);
+
+    const completedSteps = ['project directory'];
+    let failedStep = 'go module';
+
+    try{
+        await promisify(execFile)('go', ['mod', 'init', 'example.com/'+project.modulePath], {cwd: projectDir});
+        completedSteps.push('go module');
+
+        failedStep = 'main.go';
+        await fs.writeFile(path.join(projectDir, 'main.go'), 'package main\n\nimport \"fmt\"\n\nfunc main(){\n\tfmt.Println(\"Hello, world!\")\n}');
+        completedSteps.push('main.go');
+
+        failedStep = 'README.md';
+        await fs.writeFile(path.join(projectDir, 'README.md'), `# ${project.name} \n\n ${project.description}`);
+        completedSteps.push('README.md');
+
+        failedStep = '.gitignore';
+        await fs.writeFile(path.join(projectDir, '.gitignore'), `# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test binaries
+*.test
+
+# Test and coverage output
+*.out
+coverage.*
+*.coverprofile
+*.cover
+profile.cov
+
+# Local environment variables
+.env
+`);
+        completedSteps.push('.gitignore');
+
+        if (project.gitInit) {
+            failedStep = 'git repository';
+            await promisify(execFile)('git', ['init'], {cwd: projectDir});
+            completedSteps.push('git repository');
+        }
+
+        return projectDir;
+    }
+    catch (error: unknown){
+        const operationError = new Error(`Error creating ${failedStep}: ${getErrorMessage(error)}`, {cause: error});
+
+        throw new ProjectCreationError(
+            `${operationError.message} The project was partially created at: ${projectDir}`,
+            projectDir,
+            failedStep,
+            completedSteps,
+            {cause: operationError},
+        );
+    }
 }
