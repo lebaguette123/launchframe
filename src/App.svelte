@@ -8,7 +8,8 @@
     directory: ''
   });
 
-  async function handleCreateProject(){
+  async function handleCreateProject(event: SubmitEvent){
+    event.preventDefault();
     isCreating = true;
     creationResult = null;
 
@@ -40,22 +41,40 @@
 </script>
 
 <main>
-  <h1>Python Project Generator</h1>
-  <form onsubmit={handleCreateProject}>
-    <label for="name">Project Name:</label>
-    <input type="text" id="name" bind:value={project.name} required />
+  <div class="page-header">
+    <p class="eyebrow">Launchframe</p>
+    <h1>Python Project Generator</h1>
+    <p class="intro">Set up a new Python project with a few simple details.</p>
+  </div>
+  <form class="python-project-form" onsubmit={handleCreateProject}>
+    <div class="form-group">
+      <label class="description-label" for="name">Project Name:</label>
+      <input type="text" id="name" bind:value={project.name} required />
+    </div>
 
-    <label for="description">Description:</label>
-    <textarea id="description" bind:value={project.description}></textarea>
+    <div class="form-group">
+      <label class="description-label" for="description">Description:</label>
+      <textarea id="description" bind:value={project.description}></textarea>
+    </div>
 
-    <label for="gitInit">Initialize Git Repository:</label>
-    <input type="checkbox" id="gitInit" bind:checked={project.gitInit} />
+    <div class="form-group checkbox-group">
+      <label for="gitInit">
+        <input type="checkbox" id="gitInit" bind:checked={project.gitInit} />
+        <span>Initialize Git Repository</span>
+      </label>
+    </div>
 
-    <label for="directory">Directory:</label>
-    <span>{project.directory}</span>
-    <button type="button" onclick={handleChooseDirectory}>Browse...</button>
+    <div class="form-group">
+      <label class="description-label" for="directory">Directory:</label>
+      <div class="directory-controls">
+        <span class="directory-value">{project.directory || 'No directory selected'}</span>
+        <button type="button" class="secondary-button" onclick={handleChooseDirectory}>Browse...</button>
+      </div>
+    </div>
 
-    <button type="submit" disabled={isCreating}>Create Project</button>
+    <button type="submit" class="primary-button" disabled={isCreating}>
+      {isCreating ? 'Creating Project...' : 'Create Project'}
+    </button>
   </form>
   {#if creationResult}
     {#if creationResult.ok}
