@@ -14,7 +14,7 @@
         creationResult = null;
 
         try{
-            creationResult = await window.launchframe.createPythonProject(PythonProject);
+            creationResult = await window.launchframe.createPythonProject($state.snapshot(PythonProject));
         }
         catch (error: unknown){
             creationResult = {

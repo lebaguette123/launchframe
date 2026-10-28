@@ -15,7 +15,7 @@
         creationResult = null;
 
         try{
-            creationResult = await window.launchframe.createGoProject(GoProj);
+            creationResult = await window.launchframe.createGoProject($state.snapshot(GoProj));
         }
         catch (error: unknown){
             creationResult = {
