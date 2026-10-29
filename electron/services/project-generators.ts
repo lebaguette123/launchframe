@@ -18,9 +18,32 @@ export async function createPythonProject(project: PyProject): Promise<string> {
         await promisify(execFile)('python', ['-m', 'venv', '.venv'], {cwd: projectDir});
         completedSteps.push('virtual environment');
 
-        failedStep = 'main.py';
-        await fs.writeFile(path.join(projectDir, 'main.py'), "print(\"Hello, world!\")");
-        completedSteps.push('main.py');
+        if (project.framework === 'flask') {
+            failedStep = 'requirements.txt';
+            await fs.writeFile(path.join(projectDir, 'requirements.txt'), "flask");
+            completedSteps.push('requirements.txt');
+
+            failedStep = 'app.py';
+            await fs.writeFile(path.join(projectDir, 'app.py'),
+                `from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello_world():
+    return "<p>Hello, World!</p>"`);
+            completedSteps.push('app.py');
+
+
+        failedStep = 'Flask installation';
+        await promisify(execFile)(path.join(projectDir, '.venv', 'Scripts', 'python.exe'), ['-m', 'pip', 'install', '-r', 'requirements.txt'], {cwd: projectDir});
+        completedSteps.push('Flask installation');
+        }
+        else {
+            failedStep = 'main.py';
+            await fs.writeFile(path.join(projectDir, 'main.py'), "print(\"Hello, world!\")");
+            completedSteps.push('main.py');
+        }
 
         failedStep = 'README.md';
         await fs.writeFile(path.join(projectDir, 'README.md'), `# ${project.name} \n\n ${project.description}`);
@@ -57,7 +80,7 @@ export async function createGoProject(project: GoProject): Promise<string>{
     let failedStep = 'go module';
 
     try{
-        await promisify(execFile)('go', ['mod', 'init', 'example.com/'+project.modulePath], {cwd: projectDir});
+        await promisify(execFile)('go', ['mod', 'init', project.modulePath], {cwd: projectDir});
         completedSteps.push('go module');
 
         failedStep = 'main.go';

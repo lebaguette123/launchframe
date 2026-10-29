@@ -3,6 +3,7 @@ export interface PyProject{
     description: string;
     gitInit: boolean;
     directory: string;
+    framework: 'none' | 'flask';
 }
 
 export interface GoProject{

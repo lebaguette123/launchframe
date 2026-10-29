@@ -5,7 +5,8 @@
         name: '',
         description: '',
         gitInit: false,
-        directory: ''
+        directory: '',
+        framework: 'none',
     });
 
     async function handleCreateProject(e: SubmitEvent){
@@ -53,6 +54,14 @@
     <div class="form-group">
         <label class="description-label" for="description">Description:</label>
         <textarea id="description" bind:value={PythonProject.description}></textarea>
+    </div>
+
+    <div class="form-group">
+        <label class="description-label" for="framework">Framework:</label>
+        <select id="framework" bind:value={PythonProject.framework}>
+            <option value="none">None</option>
+            <option value="flask">Flask</option>
+        </select>
     </div>
 
     <div class="form-group checkbox-group">
@@ -105,3 +114,20 @@
         </section>
     {/if}
 {/if}
+
+<style>
+    #framework {
+        width: 100%;
+        padding: 0.7rem 0.8rem;
+        color: var(--primary-text);
+        background: #101a2b;
+        border: 1px solid var(--surface-border);
+        border-radius: 0.4rem;
+        outline: none;
+    }
+
+    #framework:focus {
+        border-color: var(--accent-strong);
+        box-shadow: 0 0 0 3px rgb(56 189 248 / 15%);
+    }
+</style>
